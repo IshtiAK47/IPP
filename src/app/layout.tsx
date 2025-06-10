@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -5,8 +6,8 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'TypeMatch - Discover Your Personality',
-  description: 'Take our AI-powered personality assessment to understand your MBTI type and unique traits.',
+  title: 'IPP - Discover Your Personality',
+  description: 'Take our AI-powered personality assessment to understand your MBTI type and unique traits, or generate your Jojo Stand.',
 };
 
 export default function RootLayout({

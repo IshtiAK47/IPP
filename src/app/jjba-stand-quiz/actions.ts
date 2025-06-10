@@ -5,18 +5,18 @@ import { generateJjbaStand, type GenerateJjbaStandOutput } from '@/ai/flows/gene
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-const StandQuizSubmissionSchema = z.object({
-  userInput: z.string().min(10, { message: 'Please provide a more detailed description (at least 10 characters).' }),
+const StandQuizAnswerSchema = z.object({
+  question: z.string(),
+  answer: z.string().min(1, { message: 'Please select an answer for each question.' }),
 });
 
-export async function submitStandQuiz(
-  formData: FormData
-): Promise<{ success: boolean; message?: string; data?: GenerateJjbaStandOutput }> {
-  const rawFormData = {
-    userInput: formData.get('userInput') as string,
-  };
+const StandQuizSubmissionSchema = z.array(StandQuizAnswerSchema).min(1, { message: 'Please answer at least one question.'});
 
-  const validationResult = StandQuizSubmissionSchema.safeParse(rawFormData);
+export async function submitStandQuiz(
+  answers: { question: string; answer: string }[]
+): Promise<{ success: boolean; message?: string; data?: GenerateJjbaStandOutput }> {
+  
+  const validationResult = StandQuizSubmissionSchema.safeParse(answers);
 
   if (!validationResult.success) {
     return {
@@ -25,10 +25,10 @@ export async function submitStandQuiz(
     };
   }
 
-  const { userInput } = validationResult.data;
+  const questionnaireResponses = validationResult.data;
 
   try {
-    const standResult = await generateJjbaStand({ userInput });
+    const standResult = await generateJjbaStand({ questionnaireResponses });
 
     if (!standResult || !standResult.standName) {
       return { success: false, message: 'Failed to generate your Stand. The result was inconclusive.' };
@@ -38,6 +38,7 @@ export async function submitStandQuiz(
     redirect(`/jjba-stand-result?result=${queryString}`);
 
   } catch (error: unknown) {
+    // Check for redirect error (Next.js 14+)
     if (typeof (error as any)?.digest === 'string' && 
         (error as any).digest.startsWith('NEXT_REDIRECT')) {
       throw error;

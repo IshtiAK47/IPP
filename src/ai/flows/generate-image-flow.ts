@@ -21,7 +21,8 @@ const GenerateImageOutputSchema = z.object({
     .string()
     .describe(
       "The generated image as a data URI. Expected format: 'data:image/png;base64,<encoded_data>'."
-    ),
+    )
+    .optional(), // Made optional to handle generation failures gracefully
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
@@ -38,17 +39,28 @@ const generateImageFlow = ai.defineFlow(
     outputSchema: GenerateImageOutputSchema,
   },
   async (input) => {
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // IMPORTANT: Use this specific model for image generation
-      prompt: input.prompt,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'], // IMPORTANT: Must include both TEXT and IMAGE
-      },
-    });
+    try {
+      const {media} = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-exp', // IMPORTANT: Use this specific model for image generation
+        prompt: input.prompt,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'], // IMPORTANT: Must include both TEXT and IMAGE
+        },
+      });
 
-    if (!media?.url) {
-      throw new Error('Image generation failed or returned no media URL.');
+      if (!media?.url) {
+        console.warn(`Image generation returned no media URL for prompt: "${input.prompt}"`);
+        return { imageDataUri: undefined };
+      }
+      return {imageDataUri: media.url};
+    } catch (error) {
+      console.error(`Error during image generation in flow for prompt: "${input.prompt}". Falling back. Error:`, error);
+      // Specific check for rate limit errors to provide a clearer warning
+      if (error instanceof Error && error.message.includes('429')) {
+        console.warn(`Rate limit likely hit for image generation (prompt: "${input.prompt}"). Consider checking API quotas.`);
+      }
+      return { imageDataUri: undefined }; // Return undefined URI on error
     }
-    return {imageDataUri: media.url};
   }
 );
+

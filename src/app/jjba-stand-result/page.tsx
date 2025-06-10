@@ -1,6 +1,7 @@
 
 import { Suspense } from 'react';
 import type { GenerateJjbaStandOutput } from '@/ai/flows/generate-jjba-stand-flow';
+import { generateImage } from '@/ai/flows/generate-image-flow';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -8,7 +9,34 @@ import { AlertTriangle, Ghost, Sparkles, Zap, ShieldQuestion } from 'lucide-reac
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import Image from 'next/image';
 
+async function StandImageDisplay({ standName, standAppearance, placeholderHint }: { standName: string; standAppearance: string; placeholderHint: string }) {
+  const prompt = `Create an artistic image of a Jojo's Bizarre Adventure style Stand named '${standName}'. Its appearance is described as: '${standAppearance}'. The overall theme should be ${placeholderHint}.`;
+  let imageUrl = `https://placehold.co/400x500.png`; // Default placeholder
+
+  try {
+    const imageResult = await generateImage({ prompt });
+    if (imageResult.imageDataUri) {
+      imageUrl = imageResult.imageDataUri;
+    }
+  } catch (error) {
+    console.error(`Failed to generate image for Stand '${standName}':`, error);
+    // imageUrl remains the placeholder
+  }
+
+  return (
+    <Image
+      src={imageUrl}
+      alt={`An artistic interpretation of ${standName}`}
+      data-ai-hint={placeholderHint} 
+      width={400}
+      height={500}
+      className="rounded-lg shadow-lg border-4 border-primary/50 object-cover"
+    />
+  );
+}
+
 function StandResultDetails({ standResult }: { standResult: GenerateJjbaStandOutput }) {
+  const placeholderHint = "stand user";
   return (
     <div className="space-y-8 animate-fade-in">
       <Card className="shadow-xl overflow-hidden">
@@ -24,14 +52,22 @@ function StandResultDetails({ standResult }: { standResult: GenerateJjbaStandOut
         <CardContent className="p-6 md:p-8 space-y-6">
           <div className="md:flex md:space-x-8">
             <div className="md:w-1/2 mb-6 md:mb-0 flex justify-center">
+              <Suspense fallback={
                 <Image
                     src={`https://placehold.co/400x500.png`}
-                    alt={`An artistic interpretation of ${standResult.standName}`}
-                    data-ai-hint="stand user" 
+                    alt={`Loading image for ${standResult.standName}...`}
+                    data-ai-hint={placeholderHint}
                     width={400}
                     height={500}
-                    className="rounded-lg shadow-lg border-4 border-primary/50 object-cover"
+                    className="rounded-lg shadow-lg border-4 border-primary/50 object-cover animate-pulse"
                 />
+              }>
+                <StandImageDisplay 
+                  standName={standResult.standName} 
+                  standAppearance={standResult.standAppearance}
+                  placeholderHint={placeholderHint}
+                />
+              </Suspense>
             </div>
             <div className="md:w-1/2 space-y-6">
                 <div>
@@ -111,7 +147,6 @@ export default function StandResultPage({ searchParams }: { searchParams: { resu
   }
   
   if (!standResult) {
-    // This case should be caught by the try-catch, but as a fallback.
     return (
       <div className="text-center py-10">
         <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -147,12 +182,25 @@ function StandLoading() {
             <div className="h-5 bg-primary-foreground/20 rounded w-1/2 mx-auto"></div>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
-            <div className="h-6 bg-muted rounded w-1/3 mb-2"></div>
-            <div className="h-20 bg-muted rounded w-full mb-4"></div>
-            <div className="h-6 bg-muted rounded w-1/3 mb-2"></div>
-            <div className="h-20 bg-muted rounded w-full mb-4"></div>
-            <div className="h-6 bg-muted rounded w-1/3 mb-2"></div>
-            <div className="h-12 bg-muted rounded w-full"></div>
+            <div className="md:flex md:space-x-8">
+                <div className="md:w-1/2 mb-6 md:mb-0 flex justify-center">
+                    <div className="w-[400px] h-[500px] bg-muted rounded-lg"></div>
+                </div>
+                <div className="md:w-1/2 space-y-6">
+                    <div>
+                        <div className="h-7 bg-muted rounded w-1/3 mb-3"></div>
+                        <div className="h-20 bg-muted rounded w-full"></div>
+                    </div>
+                    <div>
+                        <div className="h-7 bg-muted rounded w-1/3 mb-3"></div>
+                        <div className="h-20 bg-muted rounded w-full"></div>
+                    </div>
+                </div>
+            </div>
+            <div className="pt-4">
+                <div className="h-7 bg-muted rounded w-1/4 mb-3"></div>
+                <div className="h-24 bg-muted rounded w-full"></div>
+            </div>
           </CardContent>
         </Card>
       </div>

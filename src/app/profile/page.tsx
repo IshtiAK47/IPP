@@ -1,8 +1,9 @@
+
 import { Suspense } from 'react';
 import { generatePersonalityProfile } from '@/ai/flows/generate-personality-profile';
+import { generateImage } from '@/ai/flows/generate-image-flow';
 import type { PersonalityAnalysisResult } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { AlertTriangle, Brain, CheckCircle, Heart, Lightbulb, ShieldAlert, ThumbsUp, Award } from 'lucide-react';
@@ -15,17 +16,43 @@ interface ProfilePageProps {
   };
 }
 
+async function ProfileInsightImage({ mbtiType, summary, placeholderHint }: { mbtiType: string; summary: string; placeholderHint: string }) {
+  const prompt = `Generate an abstract artistic image that visually represents the core essence of the ${mbtiType} personality type. This personality is generally described as: "${summary.substring(0, 150)}...". The image should explore concepts related to ${placeholderHint}.`;
+  let imageUrl = `https://placehold.co/700x300.png`; // Default placeholder
+
+  try {
+    const imageResult = await generateImage({ prompt });
+    if (imageResult.imageDataUri) {
+      imageUrl = imageResult.imageDataUri;
+    }
+  } catch (error) {
+    console.error(`Failed to generate image for profile ${mbtiType}:`, error);
+    // imageUrl remains the placeholder
+  }
+
+  return (
+    <Image 
+      src={imageUrl} 
+      alt={`Visual interpretation of ${mbtiType} personality insights`}
+      data-ai-hint={placeholderHint}
+      width={700}
+      height={300}
+      className="rounded-lg shadow-md mx-auto object-cover"
+    />
+  );
+}
+
+
 async function ProfileDetails({ analysisResult }: { analysisResult: PersonalityAnalysisResult }) {
   let detailedProfile = null;
   try {
     const profileData = await generatePersonalityProfile({
       mbtiType: analysisResult.mbtiType,
-      userDetails: analysisResult.summary, // Use summary from first AI call as userDetails
+      userDetails: analysisResult.summary, 
     });
     detailedProfile = profileData.profile;
   } catch (error) {
     console.error("Error generating detailed profile:", error);
-    // detailedProfile remains null, UI will show a message
   }
 
   const getTraitIcon = (trait: string) => {
@@ -34,6 +61,8 @@ async function ProfileDetails({ analysisResult }: { analysisResult: PersonalityA
     if (trait.toLowerCase().includes('creative') || trait.toLowerCase().includes('imaginative')) return <Lightbulb className="h-5 w-5 mr-2 text-yellow-500" />;
     return <CheckCircle className="h-5 w-5 mr-2 text-green-500" />;
   };
+  
+  const placeholderHint = "abstract thinking";
 
   return (
     <div className="space-y-8">
@@ -110,14 +139,22 @@ async function ProfileDetails({ analysisResult }: { analysisResult: PersonalityA
         </CardFooter>
       </Card>
        <div className="text-center mt-8">
-         <Image 
-            src="https://placehold.co/700x300.png" 
-            alt="Decorative image for personality insights"
-            data-ai-hint="abstract thinking"
-            width={700}
-            height={300}
-            className="rounded-lg shadow-md mx-auto"
-          />
+          <Suspense fallback={
+            <Image 
+                src={`https://placehold.co/700x300.png`}
+                alt="Loading personality insight image..."
+                data-ai-hint={placeholderHint}
+                width={700}
+                height={300}
+                className="rounded-lg shadow-md mx-auto animate-pulse"
+            />
+          }>
+            <ProfileInsightImage 
+              mbtiType={analysisResult.mbtiType} 
+              summary={analysisResult.summary} 
+              placeholderHint={placeholderHint} 
+            />
+          </Suspense>
       </div>
     </div>
   );
@@ -162,7 +199,6 @@ export default function ProfilePage({ searchParams }: ProfilePageProps) {
   }
   
   if (!analysisResult) {
-      // This case should ideally be caught by the try-catch block, but as a fallback:
     return (
       <div className="text-center py-10">
         <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -176,7 +212,6 @@ export default function ProfilePage({ searchParams }: ProfilePageProps) {
       </div>
     );
   }
-
 
   return (
     <Suspense fallback={<ProfileLoading />}>
@@ -192,9 +227,9 @@ function ProfileLoading() {
       <h2 className="text-2xl font-semibold text-primary">Generating Your Profile...</h2>
       <p className="text-muted-foreground">This may take a few moments. We're tailoring your results!</p>
        <div className="w-full max-w-md mt-4">
-        <Card className="shadow-xl">
+        <Card className="shadow-xl animate-pulse">
           <CardHeader className="bg-primary text-primary-foreground p-8 text-center">
-             <div className="animate-pulse h-10 w-10 bg-primary-foreground/30 rounded-full mx-auto mb-4"></div>
+             <div className="h-10 w-10 bg-primary-foreground/30 rounded-full mx-auto mb-4"></div>
             <div className="h-8 bg-primary-foreground/30 rounded w-3/4 mx-auto mb-2"></div>
             <div className="h-5 bg-primary-foreground/20 rounded w-1/2 mx-auto"></div>
           </CardHeader>
@@ -217,6 +252,7 @@ function ProfileLoading() {
                 </div>
               </div>
             </div>
+            <div className="mt-8 w-[700px] h-[300px] bg-muted rounded-lg mx-auto"></div>
           </CardContent>
         </Card>
       </div>

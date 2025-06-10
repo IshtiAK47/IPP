@@ -1,11 +1,56 @@
 
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Brain, Ghost } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { generateImage } from '@/ai/flows/generate-image-flow';
+
+async function GeneratedImageDisplay({
+  promptKeywords,
+  altText,
+  basePlaceholderUrl,
+  width,
+  height,
+  className = "rounded-lg shadow-lg",
+}: {
+  promptKeywords: string;
+  altText: string;
+  basePlaceholderUrl: string;
+  width: number;
+  height: number;
+  className?: string;
+}) {
+  const prompt = `Generate an artistic image representing the concept: "${promptKeywords}". Style should be suitable for a modern web application about self-discovery and personality.`;
+  let imageUrl = basePlaceholderUrl;
+
+  try {
+    const imageResult = await generateImage({ prompt });
+    if (imageResult.imageDataUri) {
+      imageUrl = imageResult.imageDataUri;
+    }
+  } catch (error) {
+    console.error(`Failed to generate image for prompt "${promptKeywords}":`, error);
+    // imageUrl remains the placeholder
+  }
+
+  return (
+    <Image
+      src={imageUrl}
+      alt={altText}
+      data-ai-hint={promptKeywords}
+      width={width}
+      height={height}
+      className={className}
+    />
+  );
+}
 
 export default function HomePage() {
+  const personalityImageHint = "abstract personality";
+  const standImageHint = "aura energy";
+
   return (
     <div className="space-y-16 animate-fade-in">
       <section className="text-center py-12 md:py-20">
@@ -60,14 +105,24 @@ export default function HomePage() {
         <div className="container mx-auto px-6 md:px-12">
           <div className="md:flex md:items-center md:space-x-12">
             <div className="md:w-1/2 mb-8 md:mb-0">
-              <Image
-                src="https://placehold.co/600x400.png"
-                alt="Abstract representation of personality"
-                data-ai-hint="abstract personality"
-                width={600}
-                height={400}
-                className="rounded-lg shadow-lg"
-              />
+              <Suspense fallback={
+                <Image
+                  src="https://placehold.co/600x400.png"
+                  alt="Loading abstract representation of personality..."
+                  data-ai-hint={personalityImageHint}
+                  width={600}
+                  height={400}
+                  className="rounded-lg shadow-lg animate-pulse"
+                />
+              }>
+                <GeneratedImageDisplay
+                  promptKeywords={personalityImageHint}
+                  altText="Abstract representation of personality"
+                  basePlaceholderUrl="https://placehold.co/600x400.png"
+                  width={600}
+                  height={400}
+                />
+              </Suspense>
             </div>
             <div className="md:w-1/2">
               <h2 className="text-3xl font-bold font-headline mb-6">Explore Your Personality</h2>
@@ -86,14 +141,24 @@ export default function HomePage() {
         <div className="container mx-auto px-6 md:px-12">
           <div className="md:flex md:items-center md:flex-row-reverse md:space-x-reverse md:space-x-12">
             <div className="md:w-1/2 mb-8 md:mb-0">
-              <Image
-                src="https://placehold.co/600x400.png"
-                alt="Mysterious energy aura representing a Jojo Stand"
-                data-ai-hint="aura energy"
-                width={600}
-                height={400}
-                className="rounded-lg shadow-lg"
-              />
+               <Suspense fallback={
+                <Image
+                  src="https://placehold.co/600x400.png"
+                  alt="Loading mysterious energy aura..."
+                  data-ai-hint={standImageHint}
+                  width={600}
+                  height={400}
+                  className="rounded-lg shadow-lg animate-pulse"
+                />
+              }>
+                <GeneratedImageDisplay
+                  promptKeywords={standImageHint}
+                  altText="Mysterious energy aura representing a Jojo Stand"
+                  basePlaceholderUrl="https://placehold.co/600x400.png"
+                  width={600}
+                  height={400}
+                />
+              </Suspense>
             </div>
             <div className="md:w-1/2">
               <div className="flex items-center mb-4">

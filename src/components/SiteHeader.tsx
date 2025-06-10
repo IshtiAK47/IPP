@@ -1,13 +1,15 @@
+
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
-import { Menu, Sparkles, HelpCircle, Users } from 'lucide-react';
+import { Menu, Sparkles, HelpCircle, Users, Ghost } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 export function SiteHeader() {
   const navItems = [
     { href: '/', label: 'Home', icon: <Sparkles className="h-5 w-5" /> },
-    { href: '/questionnaire', label: 'Start Test', icon: <Users className="h-5 w-5" /> },
+    { href: '/questionnaire', label: 'Personality Test', icon: <Users className="h-5 w-5" /> },
+    { href: '/jjba-stand-quiz', label: 'My Jojo Stand', icon: <Ghost className="h-5 w-5" /> },
     { href: '/mbti-explained', label: 'About MBTI', icon: <HelpCircle className="h-5 w-5" /> },
   ];
 

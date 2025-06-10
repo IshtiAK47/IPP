@@ -1,8 +1,9 @@
+
 'use server';
 
 import { analyzePersonalityQuestionnaire } from '@/ai/flows/analyze-personality-questionnaire';
-import type { QuestionnaireAnswer, PersonalityAnalysisResult } from '@/lib/types';
-import { redirect } from 'next/navigation';
+import type { PersonalityAnalysisResult } from '@/lib/types';
+import { redirect, isRedirectError } from 'next/navigation';
 import { z } from 'zod';
 
 const QuestionnaireSubmissionSchema = z.array(
@@ -30,13 +31,17 @@ export async function submitQuestionnaire(
     }
     
     const queryString = encodeURIComponent(JSON.stringify(analysisResult));
+    // The redirect function throws an error, which will be caught by the catch block.
+    // If it's a redirect error, it must be re-thrown for Next.js to handle it.
     redirect(`/profile?result=${queryString}`);
-    
-    // Note: redirect will prevent this return from being reached by client,
-    // but it's good practice for type consistency if redirect was conditional.
-    return { success: true, data: analysisResult };
 
   } catch (error) {
+    // If the error is a redirect error, re-throw it so Next.js can handle the redirect.
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
+    // Handle other errors
     console.error("Error submitting questionnaire:", error);
     let message = 'An unexpected error occurred.';
     if (error instanceof z.ZodError) {
@@ -47,3 +52,4 @@ export async function submitQuestionnaire(
     return { success: false, message };
   }
 }
+

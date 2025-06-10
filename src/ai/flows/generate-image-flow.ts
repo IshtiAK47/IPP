@@ -55,9 +55,12 @@ const generateImageFlow = ai.defineFlow(
       return {imageDataUri: media.url};
     } catch (error) {
       console.error(`Error during image generation in flow for prompt: "${input.prompt}". Falling back. Error:`, error);
-      // Specific check for rate limit errors to provide a clearer warning
-      if (error instanceof Error && error.message.includes('429')) {
-        console.warn(`Rate limit likely hit for image generation (prompt: "${input.prompt}"). Consider checking API quotas.`);
+      if (error instanceof Error) {
+        if (error.message.includes('429')) {
+          console.warn(`Rate limit likely hit for image generation (prompt: "${input.prompt}"). Consider checking API quotas.`);
+        } else if (error.message.includes('500')) {
+          console.warn(`Internal Server Error from image generation API (prompt: "${input.prompt}"). This is likely an issue with the API provider. Retrying later might help.`);
+        }
       }
       return { imageDataUri: undefined }; // Return undefined URI on error
     }

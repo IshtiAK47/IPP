@@ -3,7 +3,7 @@
 
 import { analyzePersonalityQuestionnaire } from '@/ai/flows/analyze-personality-questionnaire';
 import type { PersonalityAnalysisResult } from '@/lib/types';
-import { redirect, isRedirectError } from 'next/navigation';
+import { redirect } from 'next/navigation'; // Removed isRedirectError
 import { z } from 'zod';
 
 const QuestionnaireSubmissionSchema = z.array(
@@ -35,9 +35,11 @@ export async function submitQuestionnaire(
     // If it's a redirect error, it must be re-thrown for Next.js to handle it.
     redirect(`/profile?result=${queryString}`);
 
-  } catch (error) {
+  } catch (error: unknown) { // Catch error as unknown
     // If the error is a redirect error, re-throw it so Next.js can handle the redirect.
-    if (isRedirectError(error)) {
+    // Check the error's digest property directly.
+    if (typeof (error as any)?.digest === 'string' && 
+        (error as any).digest.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
 
@@ -52,4 +54,3 @@ export async function submitQuestionnaire(
     return { success: false, message };
   }
 }
-
